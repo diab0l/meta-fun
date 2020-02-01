@@ -189,6 +189,8 @@ namespace TPrelude::TypeSystem {
 }
 
 namespace TPrelude {
+	using Type = TypeSystem::Type;
+
 	template<typename a, typename b, typename... cs>
 	using Func = TypeSystem::Func<a, b, cs...>;
 
@@ -200,8 +202,35 @@ namespace TPrelude {
 
 	namespace Definition {
 		template<typename a>
+		struct List {
+			using htype = Type;
+
+			struct Nil {
+				using htype = List<a>;
+			};
+
+			template<typename head, typename tail, TypeSystem::is_t<head, a> = true, TypeSystem::is_t<tail, List<a>> = true>
+			struct Cons {
+				using htype = List<a>;
+			};
+
+			template<typename pattern, typename x>
+			struct match {};
+
+			template<typename pattern>
+			struct match<pattern, Nil> {
+				using type = typename pattern::Nil;
+			};
+
+			template<typename pattern, typename head, typename tail>
+			struct match<pattern, Cons<head, tail>> {
+				using type = typename pattern::template Cons<head, tail>;
+			};
+		};
+
+		template<typename a>
 		struct Maybe {
-			using htype = TypeSystem::Type;
+			using htype = Type;
 
 			struct Nothing {
 				using htype = Maybe<a>;
@@ -255,8 +284,10 @@ namespace TPrelude {
 		};
 	}
 
+	using List = TypeSystem::ForAll<a_, Definition::List<a_>>;
+
 	struct Bool {
-		using htype = TypeSystem::Type;
+		using htype = Type;
 
 		struct False {
 			using htype = Bool;
@@ -426,7 +457,7 @@ namespace TPrelude {
 	};
 
 	struct Ordering {
-		using htype = TypeSystem::Type;
+		using htype = Type;
 
 		struct LT {
 			using htype = Ordering;
@@ -467,7 +498,7 @@ namespace TPrelude {
 		/* magic goes here */
 	};
 
-	//using String = List::apply<Char>;
+	typedef List::apply<Char> String;
 }
 
 #endif
