@@ -256,14 +256,14 @@ namespace TPrelude {
 	}
 
 	struct Bool {
+		using htype = TypeSystem::Type;
+
 		struct False {
 			using htype = Bool;
 		};
 		struct True {
 			using htype = Bool;
 		};
-
-		using htype = TypeSystem::Type;
 
 		template<typename, typename>
 		struct match {};
@@ -425,41 +425,49 @@ namespace TPrelude {
 		using apply = TypeSystem::import_fn<htype, fn>::apply<a>;
 	};
 
-	// struct Ordering {
-	// 	struct LT {};
-	// 	struct EQ {};
-	// 	struct GT {};
+	struct Ordering {
+		using htype = TypeSystem::Type;
 
-	// 	template<typename, typename>
-	// 	struct match {};
+		struct LT {
+			using htype = Ordering;
+		};
 
-	// 	template<typename pattern>
-	// 	struct match<pattern, LT> {
-	// 		using type = typename pattern::LT;
-	// 	};
+		struct EQ {
+			using htype = Ordering;
+		};
 
-	// 	template<typename pattern>
-	// 	struct match<pattern, EQ> {
-	// 		using type = typename pattern::EQ;
-	// 	};
+		struct GT {
+			using htype = Ordering;
+		};
 
-	// 	template<typename pattern>
-	// 	struct match<pattern, GT> {
-	// 		using type = typename pattern::GT;
-	// 	};
+		template<typename, typename>
+		struct match {};
 
-	// 	struct _Constructors {
-	// 		using LT = bool;
-	// 		using EQ = bool;
-	// 		using GT = bool;
-	// 	};
-	// };
+		template<typename pattern>
+		struct match<pattern, LT> {
+			using type = typename pattern::LT;
+		};
+
+		template<typename pattern>
+		struct match<pattern, EQ> {
+			using type = typename pattern::EQ;
+		};
+
+		template<typename pattern>
+		struct match<pattern, GT> {
+			using type = typename pattern::GT;
+		};
+	};
+
+	using LT = Ordering::LT;
+	using EQ = Ordering::EQ;
+	using GT = Ordering::GT;
 
 	struct Char {
 		/* magic goes here */
 	};
 
-	//using String = List<Char>;
+	//using String = List::apply<Char>;
 }
 
 #endif
