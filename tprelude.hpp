@@ -95,9 +95,32 @@ namespace TPrelude::TypeSystem {
 	template<typename x, typename a>
 	using is_t = typename is<x, a>::type;
 
-	template<typename a, typename b, is_t<a, Type> = true, is_t<b, Type> = true>
+	template<typename a, typename b>
 	struct Tuple {
 		using htype = Type;
+
+		template<typename x, typename y, is_t<x, a> = true, is_t<y, b> = true>
+		struct Pair {
+			using htype = Tuple<a, b>;
+		};
+
+		template<typename app>
+		struct Fn {
+			using htype = Tuple<a, b>;
+		};
+
+		template<typename, typename>
+		struct match {};
+
+		template<typename pattern, typename x, typename y>
+		struct match<pattern, Pair<x, y>> {
+			using type = typename pattern::template Pair<x, y>;
+		};
+
+		template<typename pattern, typename app>
+		struct match<pattern, Fn<app>> {
+			using htype = typename pattern::template Fn<app>;
+		};
 	};
 
 	template<typename a, typename b, typename ua, typename bound>
@@ -110,16 +133,6 @@ namespace TPrelude::TypeSystem {
 		using type = Tuple<a_, b_>;
 	};
 
-	template<typename>
-	struct arity {
-		static const uint value = 0;
-	};
-
-	template<typename a, typename b>
-	struct arity<Tuple<a, b>> {
-		static const uint value = 1 + arity<b>::value;
-	};
-	
 	template<typename htype, template<typename...> typename f, typename... bound_type_args>
 	struct import_fn {};
 
@@ -170,10 +183,6 @@ namespace TPrelude::TypeSystem {
 		using apply = import_fn<htype_<a>, f, bas..., a>;
 	};
 
-	using alpha = free<0>;
-	using beta = free<1>;
-	using gamma = free<2>;
-
 	template<typename a, typename b, typename... cs>
 	struct _NTuple {
 		using type = Tuple<a, typename _NTuple<b, cs...>::type>;
@@ -186,6 +195,19 @@ namespace TPrelude::TypeSystem {
 
 	template<typename a, typename b, typename... cs>
 	using NTuple = typename _NTuple<a, b, cs...>::type;
+
+	template<typename e, typename ua, typename... uas>
+	struct forAll_ {
+		using type = ForAll<ua, forAll_<e, uas...>>;
+	};
+
+	template<typename e, typename ua>
+	struct forAll_<e, ua> {
+		using type = ForAll<ua, e>;
+	};
+
+	template<typename e, typename ua, typename... uas>
+	using forAll_t = typename forAll_<e, ua, uas...>::type;
 }
 
 namespace TPrelude {
@@ -197,8 +219,12 @@ namespace TPrelude {
 	template<typename ua, typename e>
 	using ForAll = TypeSystem::ForAll<ua, e>;
 
-	using a_ = TypeSystem::alpha;
-	using b_ = TypeSystem::beta;
+	template<typename e, typename ua, typename... uas>
+	using ForAll_ = TypeSystem::forAll_t<e, ua, uas...>;
+
+	using a_ = TypeSystem::free<0>;
+	using b_ = TypeSystem::free<1>;
+	using c_ = TypeSystem::free<2>;
 
 	namespace Definition {
 		template<typename a>
@@ -283,6 +309,8 @@ namespace TPrelude {
 			};
 		};
 	}
+
+	using Tuple = TypeSystem::ForAll<a_, ForAll<b_, TypeSystem::Tuple<a_, b_>>>;
 
 	using List = TypeSystem::ForAll<a_, Definition::List<a_>>;
 
@@ -499,6 +527,68 @@ namespace TPrelude {
 	};
 
 	typedef List::apply<Char> String;
+
+	struct fst {
+		using htype = ForAll<a_, ForAll<b_, Func<Tuple::apply<a_>::apply<b_>, a_>>>;
+
+		private:
+		template<typename a, typename b, typename xy>
+		struct fn {
+			struct pattern {
+				template<typename x, typename y>
+				using Pair = x;
+			};
+
+			using type = 
+				typename Tuple::
+				template apply<a>::
+				template apply<b>::
+				template match<pattern, xy>::
+				type;
+		};
+
+		public:
+		template<typename a, TypeSystem::is_t<a, Type> = true>
+		using apply = TypeSystem::import_fn<htype, fn>::apply<a>;
+	};
+
+	struct snd {
+		using htype = ForAll<a_, ForAll<b_, Func<Tuple::apply<a_>::apply<b_>, b_>>>;
+
+		private:
+		template<typename a, typename b, typename xy>
+		struct fn {
+			struct pattern {
+				template<typename x, typename y>
+				using Pair = y;
+			};
+
+			using type = 
+				typename Tuple::
+				template apply<a>::
+				template apply<b>::
+				template match<pattern, xy>::
+				type;
+		};
+
+		public:
+		template<typename a, TypeSystem::is_t<a, Type> = true>
+		using apply = TypeSystem::import_fn<htype, fn>::apply<a>;
+	};
+
+	// struct curry {
+	// 	private:
+	// 	using uncurried = Func<Tuple::apply<a_>::apply<b_>, c_>;
+
+	// 	public:
+	// 	using htype = ForAll_<Func<uncurried, a_, b_, c_>, a_, b_, c_>;
+
+	// 	private:
+	// 	template<typename a, typename b, typename c, typename f>
+	// 	struct fn {
+
+	// 	};
+	// };
 }
 
 #endif
