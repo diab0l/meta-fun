@@ -104,11 +104,6 @@ namespace TPrelude::TypeSystem {
 			using htype = Tuple<a, b>;
 		};
 
-		template<typename app>
-		struct Fn {
-			using htype = Tuple<a, b>;
-		};
-
 		template<typename, typename>
 		struct match {};
 
@@ -116,54 +111,54 @@ namespace TPrelude::TypeSystem {
 		struct match<pattern, Pair<x, y>> {
 			using type = typename pattern::template Pair<x, y>;
 		};
+	};
 
-		template<typename pattern, typename app>
-		struct match<pattern, Fn<app>> {
-			using htype = typename pattern::template Fn<app>;
-		};
+	template<typename a, typename b>
+	struct Func {
+
 	};
 
 	template<typename a, typename b, typename ua, typename bound>
-	struct substitute<Tuple<a, b>, ua, bound> {
+	struct substitute<Func<a, b>, ua, bound> {
 		private:
 		using a_ = substitute_t<a, ua, bound>;
 		using b_ = substitute_t<b, ua, bound>;
 
 		public:
-		using type = Tuple<a_, b_>;
+		using type = Func<a_, b_>;
 	};
 
 	template<typename htype, template<typename...> typename f, typename... bound_type_args>
 	struct import_fn {};
 
 	template<typename a, typename b, template<typename...> typename f, typename... bas>
-	struct import_fn<Tuple<a, b>, f, bas...> {
+	struct import_fn<Func<a, b>, f, bas...> {
 		private:
 		template<typename t, typename... xs>
 		struct curried_fn {};
 
 		template<typename a_, typename b_, typename c, typename... xs>
-		struct curried_fn<Tuple<a_, Tuple<b_, c>>, xs...> {
-			using htype = Tuple<a_, Tuple<b_, c>>;
+		struct curried_fn<Func<a_, Func<b_, c>>, xs...> {
+			using htype = Func<a_, Func<b_, c>>;
 
-			using type = curried_fn<Tuple<a_, Tuple<b_, c>>, xs...>;
+			using type = curried_fn<Func<a_, Func<b_, c>>, xs...>;
 
 			template<typename y, is_t<y, a_> = true>
-			using apply = typename curried_fn<Tuple<b_, c>, xs..., y>::type;
+			using apply = typename curried_fn<Func<b_, c>, xs..., y>::type;
 		};
 
 		template<typename a_, typename b_, typename... xs>
-		struct curried_fn<Tuple<a_, b_>, xs...> {
-			using htype = Tuple<a_, b_>;
+		struct curried_fn<Func<a_, b_>, xs...> {
+			using htype = Func<a_, b_>;
 
-			using type = curried_fn<Tuple<a_, b_>, xs...>;
+			using type = curried_fn<Func<a_, b_>, xs...>;
 
 			template<typename y>
 			using apply = typename f<bas..., xs..., y>::type;
 		};
 
 		public:
-		using htype = Tuple<a, b>;
+		using htype = Func<a, b>;
 
 		template<typename x, is_t<x, a> = true>
 		using apply = typename curried_fn<htype>::template apply<x>;
@@ -184,17 +179,17 @@ namespace TPrelude::TypeSystem {
 	};
 
 	template<typename a, typename b, typename... cs>
-	struct _NTuple {
-		using type = Tuple<a, typename _NTuple<b, cs...>::type>;
+	struct _NFunc {
+		using type = Func<a, typename _NFunc<b, cs...>::type>;
 	};
 
 	template<typename a, typename b>
-	struct _NTuple<a, b> {
-		using type = Tuple<a, b>;
+	struct _NFunc<a, b> {
+		using type = Func<a, b>;
 	};
 
 	template<typename a, typename b, typename... cs>
-	using NTuple = typename _NTuple<a, b, cs...>::type;
+	using NTuple = typename _NFunc<a, b, cs...>::type;
 
 	template<typename e, typename ua, typename... uas>
 	struct forAll_ {

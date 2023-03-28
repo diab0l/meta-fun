@@ -4,8 +4,27 @@
 
 #include "main.hpp"
 
+#include "lambda2/alpha.hpp"
+#include "lambda2/is_free_var.hpp"
+
+using namespace lambda2;
 using namespace TPrelude;
 
+struct BOOL {
+  struct True {
+    static const bool value = true;
+  };
+  struct False {
+    static const bool value = false;
+  };
+};
+
+struct vx {};
+struct vy {};
+using fn = lambda2::abs<var<vx>, app<var<vy>, var<vx>>>;
+
+using x2 = is_free_var<var<vx>, var<vx>, BOOL>::type;
+static const bool x2_v = x2::value;
 int main() {
   // auto ma = None();
 	// auto a =
